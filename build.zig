@@ -2,14 +2,20 @@ const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const yazap = b.addModule("yazap", .{ .root_source_file = b.path("src/lib.zig") });
-
-    testStep(b);
-    examplesStep(b, yazap);
+    const target = b.standardTargetOptions(.{});
+    testStep(b, target);
+    examplesStep(b, yazap, target);
 }
 
-fn testStep(b: *std.Build) void {
+fn testStep(b: *std.Build, target: std.Build.ResolvedTarget) void {
     // Test file information.
-    const tests = b.addTest(.{ .root_source_file = b.path("src/test.zig") });
+    const test_module = b.addModule("test", .{
+        .root_source_file = b.path("src/test.zig"),
+        .target = target,
+    });
+    const tests = b.addTest(.{
+        .root_module = test_module,
+    });
     // This runs the unit tests.
     const runner = b.addRunArtifact(tests);
 
@@ -17,7 +23,7 @@ fn testStep(b: *std.Build) void {
     step.dependOn(&runner.step);
 }
 
-fn examplesStep(b: *std.Build, yazap: *std.Build.Module) void {
+fn examplesStep(b: *std.Build, yazap: *std.Build.Module, target: std.Build.ResolvedTarget) void {
     var dir = std.fs.cwd().openDir("./examples/", .{ .iterate = true }) catch return;
     defer dir.close();
 
@@ -34,11 +40,14 @@ fn examplesStep(b: *std.Build, yazap: *std.Build.Module) void {
         // Example file name without extension.
         const example_name = std.fs.path.stem(example_file_path.getDisplayName());
 
+        const example_module = b.addModule("example", .{
+            .root_source_file = example_file_path,
+            .target = target,
+        });
         // Binary information of an example.
         const executable = b.addExecutable(.{
             .name = example_name,
-            .root_source_file = example_file_path,
-            .target = b.graph.host,
+            .root_module = example_module,
         });
         // Add yazap as a dependency.
         executable.root_module.addImport("yazap", yazap);

@@ -1,6 +1,7 @@
 .{
     .name = .yazap,
     .version = "0.6.3",
+    .minimum_zig_version = "0.15.1",
     .fingerprint = 0xc4ff2399127e5b67,
     .paths = .{
         "build.zig",
